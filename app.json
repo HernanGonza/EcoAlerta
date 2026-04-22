@@ -4,7 +4,7 @@
     "slug": "EcoAlerta",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/ECOALERTA-logo-fondo-naranja.png",
     "scheme": "ecoalerta",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
