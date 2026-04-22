@@ -1,18 +1,11 @@
 import { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Image,
-  FlatList,
+  View, Text, TextInput, TouchableOpacity, ScrollView,
+  StyleSheet, Alert, ActivityIndicator, Image, FlatList, StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../lib/authContext";
 import { useLocation } from "../hooks/useLocation";
 import { useNetwork } from "../hooks/useNetwork";
@@ -21,7 +14,23 @@ import { addToQueue } from "../lib/offlineQueue";
 import { createRecord } from "../lib/api";
 import AudioRecorder from "../components/AudioRecorder";
 
-const TIPOS_INCENDIO = ["FORESTAL", "INTERFASE", "PASTIZAL", "URBANO"];
+const C = {
+  naranja: '#FF751F',
+  verde: '#7C9885',
+  oliva: '#B5B682',
+  carbon: '#36382E',
+  crema: '#FFEE93',
+  carbonLight: '#4a4d40',
+  carbonDark: '#2a2c24',
+  carbonMid: '#3d3f36',
+}
+
+const TIPOS_INCENDIO = [
+  { key: "FORESTAL", icon: "leaf" },
+  { key: "INTERFASE", icon: "home" },
+  { key: "PASTIZAL", icon: "sunny" },
+  { key: "URBANO", icon: "business" },
+]
 
 interface FormState {
   nombre_incendio: string
@@ -43,12 +52,7 @@ const initialForm = (): FormState => ({
 
 export default function Formulario() {
   const { session, signOut } = useAuth();
-  const {
-    location,
-    error: locationError,
-    loading: locationLoading,
-    retry,
-  } = useLocation();
+  const { location, error: locationError, loading: locationLoading, retry } = useLocation();
   const { isConnected } = useNetwork();
   const router = useRouter();
   const [audios, setAudios] = useState<string[]>([]);
@@ -57,9 +61,7 @@ export default function Formulario() {
   const [form, setForm] = useState<FormState>(initialForm());
 
   useEffect(() => {
-    if (!session && isConnected) {
-      router.replace("/login");
-    }
+    if (!session && isConnected) router.replace("/login");
   }, [session, isConnected]);
 
   const updateField = (key: keyof FormState, value: string | null) => {
@@ -71,9 +73,7 @@ export default function Formulario() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
     });
-    if (!result.canceled) {
-      setFotos((prev) => [...prev, result.assets[0].uri]);
-    }
+    if (!result.canceled) setFotos((prev) => [...prev, result.assets[0].uri]);
   };
 
   const uploadFoto = async (uri: string): Promise<string> => {
@@ -81,13 +81,9 @@ export default function Formulario() {
     const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpeg`;
     const response = await fetch(uri);
     const blob = await response.blob();
-    const { error } = await supabase.storage
-      .from("fotos_incendios")
-      .upload(filename, blob, { contentType: "image/jpeg" });
+    const { error } = await supabase.storage.from("fotos_incendios").upload(filename, blob, { contentType: "image/jpeg" });
     if (error) throw error;
-    const { data } = supabase.storage
-      .from("fotos_incendios")
-      .getPublicUrl(filename);
+    const { data } = supabase.storage.from("fotos_incendios").getPublicUrl(filename);
     return data.publicUrl;
   };
 
@@ -96,36 +92,29 @@ export default function Formulario() {
     const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.m4a`;
     const response = await fetch(uri);
     const blob = await response.blob();
-    const { error } = await supabase.storage
-      .from("audios_incendios")
-      .upload(filename, blob, { contentType: "audio/m4a" });
+    const { error } = await supabase.storage.from("audios_incendios").upload(filename, blob, { contentType: "audio/m4a" });
     if (error) throw error;
-    const { data } = supabase.storage
-      .from("audios_incendios")
-      .getPublicUrl(filename);
+    const { data } = supabase.storage.from("audios_incendios").getPublicUrl(filename);
     return data.publicUrl;
   };
 
   const handleSubmit = async () => {
     if (!location) {
-      Alert.alert("Error", "Se necesita la ubicación para enviar el formulario");
+      Alert.alert("Sin ubicación", "Necesitás activar la ubicación para enviar el reporte");
       return;
     }
     if (!form.nombre_incendio) {
-      Alert.alert("Error", "Seleccioná el tipo de incendio");
+      Alert.alert("Campo requerido", "Seleccioná el tipo de incendio");
       return;
     }
-
     setSubmitting(true);
     try {
       let fotosUrls: string[] = [];
       let audiosUrls: string[] = [];
-
       if (isConnected) {
         fotosUrls = await Promise.all(fotos.map(uploadFoto));
         audiosUrls = await Promise.all(audios.map(uploadAudio));
       }
-
       const record = {
         nombre_incendio: form.nombre_incendio,
         fecha_inicio: form.fecha_inicio,
@@ -144,24 +133,13 @@ export default function Formulario() {
         audios: audiosUrls,
         activo: true,
       };
-
       if (isConnected) {
         await createRecord("plan_provincial_manejo_fuego", record);
-        Alert.alert("Éxito", "Reporte enviado correctamente");
+        Alert.alert("✅ Enviado", "El reporte fue enviado correctamente");
       } else {
-        await addToQueue({
-          id: Date.now().toString(),
-          data: record,
-          fotos,
-          audios,
-          timestamp: Date.now(),
-        });
-        Alert.alert(
-          "Sin conexión",
-          "El reporte se guardó y se enviará cuando haya internet"
-        );
+        await addToQueue({ id: Date.now().toString(), data: record, fotos, audios, timestamp: Date.now() });
+        Alert.alert("💾 Guardado", "Sin conexión. El reporte se enviará cuando vuelva el internet");
       }
-
       setForm(initialForm());
       setFotos([]);
       setAudios([]);
@@ -175,8 +153,10 @@ export default function Formulario() {
   if (locationLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2d7a3a" />
+        <StatusBar barStyle="light-content" backgroundColor={C.carbonDark} />
+        <ActivityIndicator size="large" color={C.naranja} />
         <Text style={styles.loadingText}>Obteniendo ubicación...</Text>
+        <Text style={styles.loadingSubtext}>La ubicación es obligatoria para continuar</Text>
       </View>
     );
   }
@@ -184,256 +164,268 @@ export default function Formulario() {
   if (locationError) {
     return (
       <View style={styles.centered}>
+        <StatusBar barStyle="light-content" backgroundColor={C.carbonDark} />
+        <View style={styles.errorIcon}>
+          <Ionicons name="location-outline" size={48} color={C.naranja} />
+        </View>
+        <Text style={styles.errorTitle}>Ubicación desactivada</Text>
         <Text style={styles.errorText}>{locationError}</Text>
-        <TouchableOpacity style={styles.button} onPress={retry}>
-          <Text style={styles.buttonText}>Reintentar</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={retry}>
+          <Ionicons name="refresh" size={18} color={C.carbon} />
+          <Text style={styles.retryBtnText}>Reintentar</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="light-content" backgroundColor={C.carbonDark} />
+
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>
-          Hola,{" "}
-          {session?.user?.user_metadata?.full_name ??
-            session?.user?.email ??
-            "Anónimo"}
-        </Text>
+        <View>
+          <Text style={styles.headerGreeting}>
+            Hola, {session?.user?.user_metadata?.full_name ?? session?.user?.email ?? 'Anónimo'}
+          </Text>
+          <Text style={styles.headerSub}>Nuevo reporte de incendio</Text>
+        </View>
         {session && (
-          <TouchableOpacity onPress={signOut}>
-            <Text style={styles.logoutText}>Salir</Text>
+          <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
+            <Ionicons name="log-out-outline" size={20} color={C.naranja} />
           </TouchableOpacity>
         )}
       </View>
 
+      {/* Banner offline */}
       {!isConnected && (
         <View style={styles.offlineBanner}>
-          <Text style={styles.offlineText}>
-            Sin conexión — el reporte se guardará localmente
-          </Text>
+          <Ionicons name="cloud-offline-outline" size={18} color={C.crema} />
+          <Text style={styles.offlineText}>Sin conexión — se guardará localmente</Text>
         </View>
       )}
 
-      <Text style={styles.label}>Tipo de incendio *</Text>
-      <View style={styles.tiposContainer}>
-        {TIPOS_INCENDIO.map((tipo) => (
-          <TouchableOpacity
-            key={tipo}
-            style={[
-              styles.tipoBtn,
-              form.nombre_incendio === tipo && styles.tipoBtnActive,
-            ]}
-            onPress={() => updateField("nombre_incendio", tipo)}
-          >
-            <Text
-              style={[
-                styles.tipoBtnText,
-                form.nombre_incendio === tipo && styles.tipoBtnTextActive,
-              ]}
+      {/* Tipo de incendio */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="flame-outline" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Tipo de incendio *</Text>
+        </View>
+        <View style={styles.tiposGrid}>
+          {TIPOS_INCENDIO.map((tipo) => (
+            <TouchableOpacity
+              key={tipo.key}
+              style={[styles.tipoBtn, form.nombre_incendio === tipo.key && styles.tipoBtnActive]}
+              onPress={() => updateField("nombre_incendio", tipo.key)}
             >
-              {tipo}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Ionicons
+                name={tipo.icon as any}
+                size={22}
+                color={form.nombre_incendio === tipo.key ? C.carbon : C.oliva}
+              />
+              <Text style={[styles.tipoBtnText, form.nombre_incendio === tipo.key && styles.tipoBtnTextActive]}>
+                {tipo.key}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      <Text style={styles.label}>Fecha inicio</Text>
-      <TextInput
-        style={styles.input}
-        value={form.fecha_inicio}
-        onChangeText={(v) => updateField("fecha_inicio", v)}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor="#666"
-      />
-
-      <Text style={styles.label}>Hora inicio</Text>
-      <TextInput
-        style={styles.input}
-        value={form.hora_inicio}
-        onChangeText={(v) => updateField("hora_inicio", v)}
-        placeholder="HH:MM:SS"
-        placeholderTextColor="#666"
-      />
-
-      <Text style={styles.label}>Vegetación afectada</Text>
-      <TextInput
-        style={styles.input}
-        value={form.vegetacion_afectada}
-        onChangeText={(v) => updateField("vegetacion_afectada", v)}
-        placeholderTextColor="#666"
-        placeholder="Tipo de vegetación"
-      />
-
-      <Text style={styles.label}>Ciudad (opcional)</Text>
-      <TextInput
-        style={styles.input}
-        value={form.ciudad_temp ?? ""}
-        onChangeText={(v) => updateField("ciudad_temp", v)}
-        placeholderTextColor="#666"
-        placeholder="Ciudad"
-      />
-
-      <View style={styles.locationBox}>
-        <Text style={styles.locationLabel}>Ubicación</Text>
-        <Text style={styles.locationText}>Lat: {location?.latitud_dms}</Text>
-        <Text style={styles.locationText}>Lon: {location?.longitud_dms}</Text>
+      {/* Fecha y hora */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="time-outline" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Fecha y hora</Text>
+        </View>
+        <View style={styles.row}>
+          <View style={[styles.inputWrapper, { flex: 1, marginRight: 8 }]}>
+            <Ionicons name="calendar-outline" size={16} color={C.verde} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              value={form.fecha_inicio}
+              onChangeText={(v) => updateField("fecha_inicio", v)}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#666"
+            />
+          </View>
+          <View style={[styles.inputWrapper, { flex: 1 }]}>
+            <Ionicons name="time-outline" size={16} color={C.verde} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              value={form.hora_inicio}
+              onChangeText={(v) => updateField("hora_inicio", v)}
+              placeholder="HH:MM:SS"
+              placeholderTextColor="#666"
+            />
+          </View>
+        </View>
       </View>
 
-      <Text style={styles.label}>Fotos ({fotos.length})</Text>
-      {fotos.length > 0 && (
-        <FlatList
-          data={fotos}
-          horizontal
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.fotoContainer}>
-              <Image source={{ uri: item }} style={styles.miniatura} />
-              <TouchableOpacity
-                style={styles.fotoBorrar}
-                onPress={() =>
-                  setFotos((prev) => prev.filter((_, i) => i !== index))
-                }
-              >
-                <Text style={styles.fotoBorrarText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          style={{ marginBottom: 8 }}
+      {/* Vegetación */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="leaf-outline" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Vegetación afectada</Text>
+        </View>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={[styles.input, { paddingLeft: 14 }]}
+            value={form.vegetacion_afectada}
+            onChangeText={(v) => updateField("vegetacion_afectada", v)}
+            placeholder="Describí la vegetación afectada"
+            placeholderTextColor="#666"
+          />
+        </View>
+      </View>
+
+      {/* Ciudad */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="map-outline" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Ciudad <Text style={styles.optional}>(opcional)</Text></Text>
+        </View>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={[styles.input, { paddingLeft: 14 }]}
+            value={form.ciudad_temp ?? ""}
+            onChangeText={(v) => updateField("ciudad_temp", v)}
+            placeholder="Nombre de la ciudad o localidad"
+            placeholderTextColor="#666"
+          />
+        </View>
+      </View>
+
+      {/* Ubicación GPS */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="location" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Ubicación GPS</Text>
+        </View>
+        <View style={styles.locationBox}>
+          <View style={styles.locationRow}>
+            <Ionicons name="navigate-outline" size={16} color={C.verde} />
+            <Text style={styles.locationText}>Lat: {location?.latitud_dms}</Text>
+          </View>
+          <View style={styles.locationRow}>
+            <Ionicons name="navigate-outline" size={16} color={C.verde} />
+            <Text style={styles.locationText}>Lon: {location?.longitud_dms}</Text>
+          </View>
+          <View style={[styles.locationRow, { marginTop: 4 }]}>
+            <View style={styles.gpsActiveDot} />
+            <Text style={styles.gpsActiveText}>GPS activo en tiempo real</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Fotos */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="camera-outline" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Fotos <Text style={styles.count}>({fotos.length})</Text></Text>
+        </View>
+        {fotos.length > 0 && (
+          <FlatList
+            data={fotos}
+            horizontal
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item, index }) => (
+              <View style={styles.fotoContainer}>
+                <Image source={{ uri: item }} style={styles.miniatura} />
+                <TouchableOpacity
+                  style={styles.fotoBorrar}
+                  onPress={() => setFotos((prev) => prev.filter((_, i) => i !== index))}
+                >
+                  <Ionicons name="close" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+            style={{ marginBottom: 10 }}
+            showsHorizontalScrollIndicator={false}
+          />
+        )}
+        <TouchableOpacity style={styles.addBtn} onPress={pickImage}>
+          <Ionicons name="camera" size={20} color={C.naranja} />
+          <Text style={styles.addBtnText}>Tomar foto</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Audio */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="mic-outline" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Notas de voz <Text style={styles.count}>({audios.length})</Text></Text>
+        </View>
+        <AudioRecorder
+          audios={audios}
+          onAdd={(uri) => setAudios((prev) => [...prev, uri])}
+          onRemove={(index) => setAudios((prev) => prev.filter((_, i) => i !== index))}
         />
-      )}
-      <TouchableOpacity style={styles.fotoBtn} onPress={pickImage}>
-        <Text style={styles.fotoBtnText}>+ Agregar foto</Text>
-      </TouchableOpacity>
+      </View>
 
-      <Text style={styles.label}>Notas de voz ({audios.length})</Text>
-      <AudioRecorder
-        audios={audios}
-        onAdd={(uri) => setAudios((prev) => [...prev, uri])}
-        onRemove={(index) =>
-          setAudios((prev) => prev.filter((_, i) => i !== index))
-        }
-      />
-
+      {/* Botón enviar */}
       <TouchableOpacity
         style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
         onPress={handleSubmit}
         disabled={submitting}
       >
-        <Text style={styles.submitBtnText}>
-          {submitting
-            ? "Enviando..."
-            : isConnected
-              ? "Enviar reporte"
-              : "Guardar offline"}
-        </Text>
+        {submitting ? (
+          <ActivityIndicator size="small" color={C.carbon} />
+        ) : (
+          <>
+            <Ionicons name={isConnected ? "send" : "save"} size={20} color={C.carbon} />
+            <Text style={styles.submitBtnText}>
+              {isConnected ? "Enviar reporte" : "Guardar offline"}
+            </Text>
+          </>
+        )}
       </TouchableOpacity>
 
-      <View style={{ height: 40 }} />
+      <View style={{ height: 48 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#1a1a1a", padding: 16 },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#1a1a1a",
-    padding: 24,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 48,
-    marginBottom: 16,
-  },
-  title: { fontSize: 24, fontWeight: "bold", color: "#fff" },
-  logoutText: { color: "#ff6b6b", fontSize: 14 },
-  label: { color: "#ccc", marginBottom: 6, marginTop: 12, fontSize: 14 },
-  input: {
-    backgroundColor: "#2a2a2a",
-    borderRadius: 8,
-    padding: 12,
-    color: "#fff",
-    fontSize: 16,
-  },
-  tiposContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 8,
-  },
-  tipoBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  tipoBtnActive: { backgroundColor: "#2d7a3a", borderColor: "#2d7a3a" },
-  tipoBtnText: { color: "#999", fontSize: 13 },
-  tipoBtnTextActive: { color: "#fff" },
-  offlineBanner: {
-    backgroundColor: "#7a4a2d",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  offlineText: { color: "#fff", fontSize: 13, textAlign: "center" },
-  locationBox: {
-    backgroundColor: "#2a2a2a",
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 12,
-  },
-  locationLabel: { color: "#2d7a3a", fontWeight: "600", marginBottom: 4 },
-  locationText: { color: "#ccc", fontSize: 13 },
-  fotoBtn: {
-    backgroundColor: "#2a2a2a",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444",
-    borderStyle: "dashed",
-    marginTop: 8,
-  },
-  fotoBtnText: { color: "#2d7a3a", fontSize: 15 },
-  submitBtn: {
-    backgroundColor: "#2d7a3a",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 24,
-  },
-  submitBtnDisabled: { opacity: 0.6 },
-  submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  button: {
-    backgroundColor: "#2d7a3a",
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  loadingText: { color: "#ccc", marginTop: 12 },
-  errorText: { color: "#ff6b6b", textAlign: "center", marginBottom: 16 },
-  fotoContainer: { position: "relative", marginRight: 8 },
-  miniatura: { width: 80, height: 80, borderRadius: 8 },
-  fotoBorrar: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fotoBorrarText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
-});
+  container: { flex: 1, backgroundColor: C.carbonDark },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.carbonDark, padding: 32 },
+  loadingText: { color: '#fff', fontSize: 16, fontWeight: '600', marginTop: 16 },
+  loadingSubtext: { color: C.oliva, fontSize: 13, marginTop: 8, textAlign: 'center' },
+  errorIcon: { width: 90, height: 90, borderRadius: 45, backgroundColor: C.carbon, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  errorTitle: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  errorText: { color: C.oliva, fontSize: 14, textAlign: 'center', marginBottom: 24 },
+  retryBtn: { backgroundColor: C.naranja, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  retryBtnText: { color: C.carbon, fontSize: 16, fontWeight: '700' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 56, paddingBottom: 20 },
+  headerGreeting: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  headerSub: { fontSize: 13, color: C.oliva, marginTop: 2 },
+  logoutBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.carbon, justifyContent: 'center', alignItems: 'center' },
+  offlineBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#5a3a1a', marginHorizontal: 20, borderRadius: 10, padding: 12, marginBottom: 8 },
+  offlineText: { color: C.crema, fontSize: 13, flex: 1 },
+  section: { marginHorizontal: 20, marginBottom: 20 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  sectionTitle: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  optional: { color: C.oliva, fontWeight: '400', fontSize: 13 },
+  count: { color: C.oliva, fontWeight: '400' },
+  tiposGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  tipoBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: C.carbonLight, backgroundColor: C.carbon, minWidth: '45%' },
+  tipoBtnActive: { backgroundColor: C.naranja, borderColor: C.naranja },
+  tipoBtnText: { color: C.oliva, fontSize: 13, fontWeight: '600' },
+  tipoBtnTextActive: { color: C.carbon },
+  row: { flexDirection: 'row' },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.carbon, borderRadius: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: C.carbonLight },
+  inputIcon: { marginRight: 8 },
+  input: { flex: 1, color: '#fff', fontSize: 15, paddingVertical: 13 },
+  locationBox: { backgroundColor: C.carbon, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: C.carbonLight },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  locationText: { color: C.oliva, fontSize: 14 },
+  gpsActiveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.verde },
+  gpsActiveText: { color: C.verde, fontSize: 12 },
+  fotoContainer: { position: 'relative', marginRight: 10 },
+  miniatura: { width: 80, height: 80, borderRadius: 10 },
+  fotoBorrar: { position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.carbon, borderRadius: 12, padding: 14, borderWidth: 1.5, borderColor: C.naranja, borderStyle: 'dashed' },
+  addBtnText: { color: C.naranja, fontSize: 15, fontWeight: '600' },
+  submitBtn: { marginHorizontal: 20, backgroundColor: C.naranja, borderRadius: 14, padding: 18, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 8 },
+  submitBtnDisabled: { opacity: 0.5 },
+  submitBtnText: { color: C.carbon, fontSize: 17, fontWeight: '800' },
+})
