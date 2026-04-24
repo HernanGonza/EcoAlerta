@@ -61,20 +61,20 @@ export default function Formulario() {
   const [form, setForm] = useState<FormState>(initialForm());
 
   useEffect(() => {
-    if (!session && isConnected) router.replace("/login");
-  }, [session, isConnected]);
+  if (!session && isConnected) router.replace("/login");
+}, [session, isConnected, router]);
 
   const updateField = (key: keyof FormState, value: string | null) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
-    });
-    if (!result.canceled) setFotos((prev) => [...prev, result.assets[0].uri]);
-  };
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['images'] as ImagePicker.MediaType[],
+    quality: 0.7,
+  });
+  if (!result.canceled) setFotos((prev) => [...prev, result.assets[0].uri]);
+};
 
   const uploadFoto = async (uri: string): Promise<string> => {
     const userId = session?.user?.id ?? "anonimo";

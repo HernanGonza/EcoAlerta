@@ -27,7 +27,7 @@ export default function Login() {
 
   useEffect(() => {
     if (session) router.replace('/formulario')
-  }, [session])
+  }, [session, router])
 
   const handleLogin = async () => {
     if (!email || !password) {
