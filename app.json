@@ -4,7 +4,7 @@
     "slug": "EcoAlerta",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/ECOALERTA-logo-fondo-naranja.png",
+    "icon": "./assets/images/ECOALERTA - ISO.png",
     "scheme": "ecoalerta",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,16 +14,16 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/ECOALERTA - ISO.png",
+        "backgroundImage": "./assets/images/ECOALERTA - ISO.png",
+        "monochromeImage": "./assets/images/ECOALERTA - ISO.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/ECOALERTA-logo-fondo-transparente.png"
+      "favicon": "./assets/images/ECOALERTA - ISO.png"
     },
     "plugins": [
       "expo-router",

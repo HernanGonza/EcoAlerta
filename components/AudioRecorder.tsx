@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
-import { Audio } from 'expo-av'
+import { useAudioRecorder, useAudioPlayer, AudioModule, RecordingPresets } from 'expo-audio'
 import { Ionicons } from '@expo/vector-icons'
 
 const C = {
@@ -21,21 +21,20 @@ interface Props {
 }
 
 export default function AudioRecorder({ audios, onAdd, onRemove }: Props) {
-  const [recording, setRecording] = useState<Audio.Recording | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
-  const soundRef = useRef<Audio.Sound | null>(null)
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
+  const player = useAudioPlayer('')
 
   const startRecording = async () => {
     try {
-      const { granted } = await Audio.requestPermissionsAsync()
-      if (!granted) {
+      const status = await AudioModule.requestRecordingPermissionsAsync()
+      if (!status.granted) {
         Alert.alert('Permiso denegado', 'Se necesita permiso para usar el micrófono')
         return
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true })
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY)
-      setRecording(recording)
+      await recorder.prepareToRecordAsync()
+      recorder.record()
       setIsRecording(true)
     } catch (e) {
       Alert.alert('Error', 'No se pudo iniciar la grabación')
@@ -43,12 +42,10 @@ export default function AudioRecorder({ audios, onAdd, onRemove }: Props) {
   }
 
   const stopRecording = async () => {
-    if (!recording) return
     try {
-      await recording.stopAndUnloadAsync()
-      const uri = recording.getURI()
+      await recorder.stop()
+      const uri = recorder.uri
       if (uri) onAdd(uri)
-      setRecording(null)
       setIsRecording(false)
     } catch (e) {
       Alert.alert('Error', 'No se pudo detener la grabación')
@@ -57,21 +54,21 @@ export default function AudioRecorder({ audios, onAdd, onRemove }: Props) {
 
   const playAudio = async (uri: string, index: number) => {
     try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync()
-        soundRef.current = null
-      }
       if (playingIndex === index) {
+        player.pause()
         setPlayingIndex(null)
         return
       }
-      const { sound } = await Audio.Sound.createAsync({ uri })
-      soundRef.current = sound
+      player.replace({ uri })
+      player.play()
       setPlayingIndex(index)
-      await sound.playAsync()
-      sound.setOnPlaybackStatusUpdate(status => {
-        if (status.isLoaded && status.didJustFinish) setPlayingIndex(null)
-      })
+      // Detectar cuando termina
+      const interval = setInterval(() => {
+        if (player.currentTime >= player.duration && player.duration > 0) {
+          setPlayingIndex(null)
+          clearInterval(interval)
+        }
+      }, 500)
     } catch (e) {
       Alert.alert('Error', 'No se pudo reproducir el audio')
     }
@@ -119,9 +116,7 @@ export default function AudioRecorder({ audios, onAdd, onRemove }: Props) {
             {isRecording ? 'Tocá para detener' : 'Tocá para comenzar'}
           </Text>
         </View>
-        {isRecording && (
-          <View style={styles.recordingDot} />
-        )}
+        {isRecording && <View style={styles.recordingDot} />}
       </TouchableOpacity>
     </View>
   )
@@ -140,9 +135,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     marginRight: 10,
   },
-  playBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
-  },
+  playBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   playBtnText: { color: '#fff', fontSize: 14, fontWeight: '500' },
   deleteBtn: {
     width: 36, height: 36, borderRadius: 18,

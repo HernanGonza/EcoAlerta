@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform, StatusBar
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, StatusBar, Image
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -52,9 +52,11 @@ export default function Login() {
       <StatusBar barStyle="light-content" backgroundColor={C.carbonDark} />
 
       <View style={styles.topSection}>
-        <View style={styles.iconCircle}>
-          <Ionicons name="flame" size={48} color={C.naranja} />
-        </View>
+        <Image
+          source={require('../assets/images/iso - redondo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.appName}>EcoAlerta</Text>
         <Text style={styles.subtitle}>Ministerio de Ecología{'\n'}y Recursos Naturales Renovables</Text>
         <Text style={styles.province}>Misiones</Text>
@@ -112,13 +114,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.carbonDark },
   topSection: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
-  iconCircle: {
-    width: 90, height: 90, borderRadius: 45,
-    backgroundColor: C.carbon,
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 2, borderColor: C.naranja,
-  },
+  logo: { width: 120, height: 120, marginBottom: 16 },
   appName: { fontSize: 36, fontWeight: '800', color: '#fff', letterSpacing: 1 },
   subtitle: { fontSize: 13, color: C.oliva, textAlign: 'center', marginTop: 8, lineHeight: 20 },
   province: { fontSize: 12, color: C.verde, marginTop: 4, letterSpacing: 2, textTransform: 'uppercase' },
