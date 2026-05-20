@@ -13,6 +13,7 @@ import { supabase } from "../lib/supabase";
 import { addToQueue } from "../lib/offlineQueue";
 import { createRecord } from "../lib/api";
 import AudioRecorder from "../components/AudioRecorder";
+import MapaUbicacion from "../components/MapaUbicacion";
 
 const C = {
   naranja: '#FF751F',
@@ -77,68 +78,56 @@ export default function Formulario() {
   };
 
   const uploadFoto = async (uri: string): Promise<string> => {
-  const userId = session?.user?.id ?? "anonimo";
-  const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpeg`;
-  
-  const { data: { session: currentSession } } = await supabase.auth.getSession();
-  const token = currentSession?.access_token ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
-  
-  const response = await fetch(uri);
-  const blob = await response.blob();
-
-  const uploadResponse = await fetch(
-    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/fotos_incendios/${filename}`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'image/jpeg',
-        'x-upsert': 'false',
-      },
-      body: blob,
-    }
-  );
-
-  console.log('[FOTO] Upload status:', uploadResponse.status);
-  const result = await uploadResponse.json();
-  console.log('[FOTO] Upload result:', JSON.stringify(result));
-
-  if (!uploadResponse.ok) throw new Error(result.message ?? 'Error subiendo foto');
-
-  return `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/fotos_incendios/${filename}`;
-};
+    const userId = session?.user?.id ?? "anonimo";
+    const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpeg`;
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    const token = currentSession?.access_token ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const uploadResponse = await fetch(
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/fotos_incendios/${filename}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'image/jpeg',
+          'x-upsert': 'false',
+        },
+        body: blob,
+      }
+    );
+    console.log('[FOTO] Upload status:', uploadResponse.status);
+    const result = await uploadResponse.json();
+    console.log('[FOTO] Upload result:', JSON.stringify(result));
+    if (!uploadResponse.ok) throw new Error(result.message ?? 'Error subiendo foto');
+    return `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/fotos_incendios/${filename}`;
+  };
 
   const uploadAudio = async (uri: string): Promise<string> => {
-  const userId = session?.user?.id ?? "anonimo";
-  const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.m4a`;
-  
-  const { data: { session: currentSession } } = await supabase.auth.getSession();
-  const token = currentSession?.access_token ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
-  
-  const response = await fetch(uri);
-  const blob = await response.blob();
-
-  const uploadResponse = await fetch(
-    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/audios_incendios/${filename}`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'audio/m4a',
-        'x-upsert': 'false',
-      },
-      body: blob,
-    }
-  );
-
-  console.log('[AUDIO] Upload status:', uploadResponse.status);
-  const result = await uploadResponse.json();
-  console.log('[AUDIO] Upload result:', JSON.stringify(result));
-
-  if (!uploadResponse.ok) throw new Error(result.message ?? 'Error subiendo audio');
-
-  return `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/audios_incendios/${filename}`;
-};
+    const userId = session?.user?.id ?? "anonimo";
+    const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.m4a`;
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    const token = currentSession?.access_token ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const uploadResponse = await fetch(
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/audios_incendios/${filename}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'audio/m4a',
+          'x-upsert': 'false',
+        },
+        body: blob,
+      }
+    );
+    console.log('[AUDIO] Upload status:', uploadResponse.status);
+    const result = await uploadResponse.json();
+    console.log('[AUDIO] Upload result:', JSON.stringify(result));
+    if (!uploadResponse.ok) throw new Error(result.message ?? 'Error subiendo audio');
+    return `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/audios_incendios/${filename}`;
+  };
 
   const handleSubmit = async () => {
     if (!location) {
@@ -336,6 +325,34 @@ export default function Formulario() {
             placeholderTextColor="#666"
             keyboardType="numeric"
           />
+        </View>
+      </View>
+
+      {/* Ubicación GPS */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="location" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Ubicación GPS</Text>
+        </View>
+        {location && (
+          <MapaUbicacion
+            latitud={location.latitud_decimal}
+            longitud={location.longitud_decimal}
+          />
+        )}
+        <View style={[styles.locationBox, { marginTop: 10 }]}>
+          <View style={styles.locationRow}>
+            <Ionicons name="navigate-outline" size={16} color={C.verde} />
+            <Text style={styles.locationText}>Lat: {location?.latitud_dms}</Text>
+          </View>
+          <View style={styles.locationRow}>
+            <Ionicons name="navigate-outline" size={16} color={C.verde} />
+            <Text style={styles.locationText}>Lon: {location?.longitud_dms}</Text>
+          </View>
+          <View style={[styles.locationRow, { marginTop: 4 }]}>
+            <View style={styles.gpsActiveDot} />
+            <Text style={styles.gpsActiveText}>GPS activo en tiempo real</Text>
+          </View>
         </View>
       </View>
 
