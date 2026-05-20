@@ -8,6 +8,7 @@
     "scheme": "ecoalerta",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "Ecodatos",
     "ios": {
       "supportsTablet": true
     },
