@@ -61,42 +61,84 @@ export default function Formulario() {
   const [form, setForm] = useState<FormState>(initialForm());
 
   useEffect(() => {
-  if (!session && isConnected) router.replace("/login");
-}, [session, isConnected, router]);
+    if (!session && isConnected) router.replace("/login");
+  }, [session, isConnected, router]);
 
   const updateField = (key: keyof FormState, value: string | null) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const pickImage = async () => {
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ['images'] as ImagePicker.MediaType[],
-    quality: 0.7,
-  });
-  if (!result.canceled) setFotos((prev) => [...prev, result.assets[0].uri]);
-};
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'] as ImagePicker.MediaType[],
+      quality: 0.7,
+    });
+    if (!result.canceled) setFotos((prev) => [...prev, result.assets[0].uri]);
+  };
 
   const uploadFoto = async (uri: string): Promise<string> => {
-    const userId = session?.user?.id ?? "anonimo";
-    const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpeg`;
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage.from("fotos_incendios").upload(filename, blob, { contentType: "image/jpeg" });
-    if (error) throw error;
-    const { data } = supabase.storage.from("fotos_incendios").getPublicUrl(filename);
-    return data.publicUrl;
-  };
+  const userId = session?.user?.id ?? "anonimo";
+  const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpeg`;
+  
+  const { data: { session: currentSession } } = await supabase.auth.getSession();
+  const token = currentSession?.access_token ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+  
+  const response = await fetch(uri);
+  const blob = await response.blob();
+
+  const uploadResponse = await fetch(
+    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/fotos_incendios/${filename}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'false',
+      },
+      body: blob,
+    }
+  );
+
+  console.log('[FOTO] Upload status:', uploadResponse.status);
+  const result = await uploadResponse.json();
+  console.log('[FOTO] Upload result:', JSON.stringify(result));
+
+  if (!uploadResponse.ok) throw new Error(result.message ?? 'Error subiendo foto');
+
+  return `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/fotos_incendios/${filename}`;
+};
 
   const uploadAudio = async (uri: string): Promise<string> => {
-    const userId = session?.user?.id ?? "anonimo";
-    const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.m4a`;
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage.from("audios_incendios").upload(filename, blob, { contentType: "audio/m4a" });
-    if (error) throw error;
-    const { data } = supabase.storage.from("audios_incendios").getPublicUrl(filename);
-    return data.publicUrl;
-  };
+  const userId = session?.user?.id ?? "anonimo";
+  const filename = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.m4a`;
+  
+  const { data: { session: currentSession } } = await supabase.auth.getSession();
+  const token = currentSession?.access_token ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+  
+  const response = await fetch(uri);
+  const blob = await response.blob();
+
+  const uploadResponse = await fetch(
+    `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/audios_incendios/${filename}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'audio/m4a',
+        'x-upsert': 'false',
+      },
+      body: blob,
+    }
+  );
+
+  console.log('[AUDIO] Upload status:', uploadResponse.status);
+  const result = await uploadResponse.json();
+  console.log('[AUDIO] Upload result:', JSON.stringify(result));
+
+  if (!uploadResponse.ok) throw new Error(result.message ?? 'Error subiendo audio');
+
+  return `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/audios_incendios/${filename}`;
+};
 
   const handleSubmit = async () => {
     if (!location) {
@@ -116,23 +158,23 @@ export default function Formulario() {
         audiosUrls = await Promise.all(audios.map(uploadAudio));
       }
       const record = {
-  nombre_incendio: form.nombre_incendio,
-  fecha_inicio: form.fecha_inicio,
-  hora_inicio: form.hora_inicio,
-  fecha_finalizacion: form.fecha_finalizacion || null,
-  vegetacion_afectada: form.vegetacion_afectada || null,
-  hectareas_consumidas: form.hectareas_consumidas || null,
-  formulario_id: "2b412292-5909-433f-85ee-81e7eae6ddef",
-  user_id: session?.user?.id ?? null,
-  created_by: session?.user?.id ?? null,
-  latitud_decimal: location.latitud_decimal,
-  longitud_decimal: location.longitud_decimal,
-  latitud_dms: location.latitud_dms,
-  longitud_dms: location.longitud_dms,
-  fotos: fotosUrls,
-  audios: audiosUrls,
-  activo: true,
-};
+        nombre_incendio: form.nombre_incendio,
+        fecha_inicio: form.fecha_inicio,
+        hora_inicio: form.hora_inicio,
+        fecha_finalizacion: form.fecha_finalizacion || null,
+        vegetacion_afectada: form.vegetacion_afectada || null,
+        hectareas_consumidas: form.hectareas_consumidas || null,
+        formulario_id: "2b412292-5909-433f-85ee-81e7eae6ddef",
+        user_id: session?.user?.id ?? null,
+        created_by: session?.user?.id ?? null,
+        latitud_decimal: location.latitud_decimal,
+        longitud_decimal: location.longitud_decimal,
+        latitud_dms: location.latitud_dms,
+        longitud_dms: location.longitud_dms,
+        fotos: fotosUrls,
+        audios: audiosUrls,
+        activo: true,
+      };
       if (isConnected) {
         await createRecord("plan_provincial_manejo_fuego", record);
         Alert.alert("✅ Enviado", "El reporte fue enviado correctamente");
@@ -144,6 +186,7 @@ export default function Formulario() {
       setFotos([]);
       setAudios([]);
     } catch (error: any) {
+      console.log('[SUBMIT] Error:', error.message, JSON.stringify(error));
       Alert.alert("Error", error.message);
     } finally {
       setSubmitting(false);
@@ -279,22 +322,22 @@ export default function Formulario() {
       </View>
 
       {/* Hectáreas */}
-<View style={styles.section}>
-  <View style={styles.sectionHeader}>
-    <Ionicons name="resize-outline" size={18} color={C.naranja} />
-    <Text style={styles.sectionTitle}>Hectáreas afectadas</Text>
-  </View>
-  <View style={styles.inputWrapper}>
-    <TextInput
-      style={[styles.input, { paddingLeft: 14 }]}
-      value={form.hectareas_consumidas}
-      onChangeText={(v) => updateField("hectareas_consumidas", v)}
-      placeholder="Estimación en hectáreas"
-      placeholderTextColor="#666"
-      keyboardType="numeric"
-    />
-  </View>
-</View>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="resize-outline" size={18} color={C.naranja} />
+          <Text style={styles.sectionTitle}>Hectáreas afectadas</Text>
+        </View>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={[styles.input, { paddingLeft: 14 }]}
+            value={form.hectareas_consumidas}
+            onChangeText={(v) => updateField("hectareas_consumidas", v)}
+            placeholder="Estimación en hectáreas"
+            placeholderTextColor="#666"
+            keyboardType="numeric"
+          />
+        </View>
+      </View>
 
       {/* Fotos */}
       <View style={styles.section}>
