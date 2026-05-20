@@ -38,7 +38,7 @@ interface FormState {
   hora_inicio: string
   fecha_finalizacion: string | null
   vegetacion_afectada: string
-  ciudad_temp: string
+  hectareas_consumidas: string
 }
 
 const initialForm = (): FormState => ({
@@ -47,7 +47,7 @@ const initialForm = (): FormState => ({
   hora_inicio: new Date().toTimeString().split(" ")[0],
   fecha_finalizacion: null,
   vegetacion_afectada: "",
-  ciudad_temp: "",
+  hectareas_consumidas: "",
 })
 
 export default function Formulario() {
@@ -116,23 +116,23 @@ export default function Formulario() {
         audiosUrls = await Promise.all(audios.map(uploadAudio));
       }
       const record = {
-        nombre_incendio: form.nombre_incendio,
-        fecha_inicio: form.fecha_inicio,
-        hora_inicio: form.hora_inicio,
-        fecha_finalizacion: form.fecha_finalizacion || null,
-        vegetacion_afectada: form.vegetacion_afectada || null,
-        ciudad_temp: form.ciudad_temp || null,
-        formulario_id: "2b412292-5909-433f-85ee-81e7eae6ddef",
-        user_id: session?.user?.id ?? null,
-        created_by: session?.user?.id ?? null,
-        latitud_decimal: location.latitud_decimal,
-        longitud_decimal: location.longitud_decimal,
-        latitud_dms: location.latitud_dms,
-        longitud_dms: location.longitud_dms,
-        fotos: fotosUrls,
-        audios: audiosUrls,
-        activo: true,
-      };
+  nombre_incendio: form.nombre_incendio,
+  fecha_inicio: form.fecha_inicio,
+  hora_inicio: form.hora_inicio,
+  fecha_finalizacion: form.fecha_finalizacion || null,
+  vegetacion_afectada: form.vegetacion_afectada || null,
+  hectareas_consumidas: form.hectareas_consumidas || null,
+  formulario_id: "2b412292-5909-433f-85ee-81e7eae6ddef",
+  user_id: session?.user?.id ?? null,
+  created_by: session?.user?.id ?? null,
+  latitud_decimal: location.latitud_decimal,
+  longitud_decimal: location.longitud_decimal,
+  latitud_dms: location.latitud_dms,
+  longitud_dms: location.longitud_dms,
+  fotos: fotosUrls,
+  audios: audiosUrls,
+  activo: true,
+};
       if (isConnected) {
         await createRecord("plan_provincial_manejo_fuego", record);
         Alert.alert("✅ Enviado", "El reporte fue enviado correctamente");
@@ -278,44 +278,23 @@ export default function Formulario() {
         </View>
       </View>
 
-      {/* Ciudad */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="map-outline" size={18} color={C.naranja} />
-          <Text style={styles.sectionTitle}>Ciudad <Text style={styles.optional}>(opcional)</Text></Text>
-        </View>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={[styles.input, { paddingLeft: 14 }]}
-            value={form.ciudad_temp ?? ""}
-            onChangeText={(v) => updateField("ciudad_temp", v)}
-            placeholder="Nombre de la ciudad o localidad"
-            placeholderTextColor="#666"
-          />
-        </View>
-      </View>
-
-      {/* Ubicación GPS */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="location" size={18} color={C.naranja} />
-          <Text style={styles.sectionTitle}>Ubicación GPS</Text>
-        </View>
-        <View style={styles.locationBox}>
-          <View style={styles.locationRow}>
-            <Ionicons name="navigate-outline" size={16} color={C.verde} />
-            <Text style={styles.locationText}>Lat: {location?.latitud_dms}</Text>
-          </View>
-          <View style={styles.locationRow}>
-            <Ionicons name="navigate-outline" size={16} color={C.verde} />
-            <Text style={styles.locationText}>Lon: {location?.longitud_dms}</Text>
-          </View>
-          <View style={[styles.locationRow, { marginTop: 4 }]}>
-            <View style={styles.gpsActiveDot} />
-            <Text style={styles.gpsActiveText}>GPS activo en tiempo real</Text>
-          </View>
-        </View>
-      </View>
+      {/* Hectáreas */}
+<View style={styles.section}>
+  <View style={styles.sectionHeader}>
+    <Ionicons name="resize-outline" size={18} color={C.naranja} />
+    <Text style={styles.sectionTitle}>Hectáreas afectadas</Text>
+  </View>
+  <View style={styles.inputWrapper}>
+    <TextInput
+      style={[styles.input, { paddingLeft: 14 }]}
+      value={form.hectareas_consumidas}
+      onChangeText={(v) => updateField("hectareas_consumidas", v)}
+      placeholder="Estimación en hectáreas"
+      placeholderTextColor="#666"
+      keyboardType="numeric"
+    />
+  </View>
+</View>
 
       {/* Fotos */}
       <View style={styles.section}>
