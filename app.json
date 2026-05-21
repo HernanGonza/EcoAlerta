@@ -20,7 +20,6 @@
         "backgroundImage": "./assets/images/ECOALERTA - ISO.png",
         "monochromeImage": "./assets/images/ECOALERTA - ISO.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.RECORD_AUDIO",
@@ -36,13 +35,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/ECOALERTA-logo-fondo-transparente.png",
-          "imageWidth": 200,
+          "image": "./assets/images/splash.png",
+          "imageWidth": 850,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "backgroundColor": "#36382E"
         }
       ],
       "expo-audio",
