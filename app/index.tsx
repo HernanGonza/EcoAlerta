@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    width: '85%',
+    width: 300,
   },
   barraContainer: {
     position: 'absolute',

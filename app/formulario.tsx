@@ -518,20 +518,21 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
 
       {/* Bottom Sheet */}
       <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        snapPoints={["50%"]}
-        enablePanDownToClose
-        onClose={() => setSheetType(null)}
-        backgroundStyle={{ backgroundColor: C.fondoCard }}
-        handleIndicatorStyle={{ backgroundColor: C.oliva }}
-        enableOverDrag={false}
+  ref={bottomSheetRef}
+  index={-1}
+  snapPoints={["50%"]}
+  enablePanDownToClose
+  onClose={() => setSheetType(null)}
+  backgroundStyle={{ backgroundColor: C.fondoCard }}
+  handleIndicatorStyle={{ backgroundColor: C.oliva }}
+  enableOverDrag={false}
   animateOnMount={false}
-      >
-        <BottomSheetView style={{ flex: 1 }}>
-          {sheetType ? renderSheetContent() : <View />}
-        </BottomSheetView>
-      </BottomSheet>
+  style={{ display: sheetType ? 'flex' : 'none' }}
+>
+  <BottomSheetView style={{ flex: 1 }}>
+    {sheetType ? renderSheetContent() : <View />}
+  </BottomSheetView>
+</BottomSheet>
     </View>
   );
 }
