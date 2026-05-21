@@ -525,6 +525,8 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
         onClose={() => setSheetType(null)}
         backgroundStyle={{ backgroundColor: C.fondoCard }}
         handleIndicatorStyle={{ backgroundColor: C.oliva }}
+        enableOverDrag={false}
+  animateOnMount={false}
       >
         <BottomSheetView style={{ flex: 1 }}>
           {sheetType ? renderSheetContent() : <View />}
