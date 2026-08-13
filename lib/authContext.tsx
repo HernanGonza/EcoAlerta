@@ -16,10 +16,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setLoading(false)
+      })
+      .catch((e) => {
+        // Sin red y con un token que necesitaba refrescarse: seguimos con lo que
+        // haya persistido en el dispositivo en vez de romper el arranque de la app.
+        console.error('[auth] getSession falló (posiblemente sin conexión):', e)
+        setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)

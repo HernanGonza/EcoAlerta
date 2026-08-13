@@ -29,10 +29,8 @@ export default function Index() {
     if (loading || isConnected === null) return
 
     const timer = setTimeout(async () => {
-      if (session) {
-        router.replace('/formulario')
-      } else if (!isConnected) {
-        router.replace('/formulario')
+      if (session || !isConnected) {
+        router.replace('/inicio')
       } else {
         router.replace('/login')
       }

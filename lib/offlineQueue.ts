@@ -4,9 +4,12 @@ const QUEUE_KEY = 'offline_queue'
 
 export interface QueuedReport {
   id: string
+  tabla: string
   data: any
   fotos: string[]
   audios: string[]
+  fotosBucket?: string
+  audiosBucket?: string
   timestamp: number
 }
 

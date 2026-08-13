@@ -12,7 +12,6 @@ import {
   StatusBar,
   BackHandler,
 } from "react-native";
-import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
@@ -25,6 +24,8 @@ import { addToQueue } from "../lib/offlineQueue";
 import { createRecord } from "../lib/api";
 import AudioRecorder from "../components/AudioRecorder";
 import MapaUbicacion from "../components/MapaUbicacion";
+
+const TABLA = "plan_provincial_manejo_fuego";
 
 const TIPOS_INCENDIO = [
   { key: "FORESTAL", icon: "leaf" },
@@ -53,12 +54,11 @@ const initialForm = (): FormState => ({
 
 type SheetType = "enviado" | "offline" | "error" | null;
 
-export default function Formulario() {
+export default function PlanProvincialManejoFuego() {
   const { session, signOut } = useAuth();
   const { colores: C } = useTheme();
   const { location, error: locationError, loading: locationLoading, retry } = useLocation();
   const { isConnected } = useNetwork();
-  const router = useRouter();
   const [audios, setAudios] = useState<string[]>([]);
   const [fotos, setFotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -79,10 +79,6 @@ export default function Formulario() {
     bottomSheetRef.current?.close();
     setSheetType(null);
   }, []);
-
-  useEffect(() => {
-    if (!session && isConnected) router.replace("/login");
-  }, [session, isConnected, router]);
 
   const updateField = (key: keyof FormState, value: string | null) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -182,7 +178,7 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
         activo: true,
       };
       if (isConnected) {
-        await createRecord("plan_provincial_manejo_fuego", record);
+        await createRecord(TABLA, record);
         setForm(initialForm());
         setFotos([]);
         setAudios([]);
@@ -190,9 +186,12 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
       } else {
         await addToQueue({
           id: Date.now().toString(),
+          tabla: TABLA,
           data: record,
           fotos,
           audios,
+          fotosBucket: "fotos_incendios",
+          audiosBucket: "audios_incendios",
           timestamp: Date.now(),
         });
         setForm(initialForm());

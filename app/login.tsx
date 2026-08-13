@@ -21,7 +21,7 @@ export default function Login() {
   const insets = useSafeAreaInsets()
 
   useEffect(() => {
-    if (session) router.replace('/formulario')
+    if (session) router.replace('/inicio')
   }, [session, router])
 
   const handleLogin = async () => {

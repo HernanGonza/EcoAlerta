@@ -27,7 +27,7 @@
       ]
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/ECOALERTA - ISO.png"
     },
     "plugins": [
@@ -35,10 +35,16 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash.png",
+          "image": "./assets/images/solido.png",
           "imageWidth": 300,
           "resizeMode": "contain",
-          "backgroundColor": "#36382E"
+          "backgroundColor": "#36382E",
+          "android": {
+      "image": "./assets/images/solido.png",
+      "imageWidth": 300,
+      "resizeMode": "contain",
+      "backgroundColor": "#36382E"
+    }
         }
       ],
       "expo-audio",

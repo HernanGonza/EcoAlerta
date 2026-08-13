@@ -9,6 +9,17 @@ export interface LocationData {
   longitud_dms: string
 }
 
+// En web, expo-location a veces no implementa removeSubscription y tira un error
+// no capturado al desmontar. No es fatal: si falla, el listener queda huérfano
+// pero se libera solo junto con el resto del componente.
+function safeRemove(subscription: Location.LocationSubscription | null) {
+  try {
+    subscription?.remove()
+  } catch (e) {
+    console.warn('[useLocation] no se pudo remover la suscripción de ubicación:', e)
+  }
+}
+
 export function useLocation() {
   const [location, setLocation] = useState<LocationData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -59,7 +70,7 @@ export function useLocation() {
         if (!enabled) {
           setError('La ubicación está desactivada. Activala para continuar.')
           setLocation(null)
-          subscription?.remove()
+          safeRemove(subscription)
           subscription = null
         }
       }, 3000)
@@ -69,7 +80,7 @@ export function useLocation() {
 
     return () => {
       cancelled = true
-      subscription?.remove()
+      safeRemove(subscription)
       if (interval) clearInterval(interval)
     }
   }, [retryCount])

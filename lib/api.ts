@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 export async function createRecord(tabla: string, record: any) {
   const { data: { session } } = await supabase.auth.getSession()
-  
+
   const response = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/universal-create`, {
     method: 'POST',
     headers: {
@@ -14,10 +14,17 @@ export async function createRecord(tabla: string, record: any) {
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Error al enviar el registro')
+    const bodyText = await response.text()
+    console.error(`[createRecord] ${tabla} -> HTTP ${response.status}:`, bodyText)
+    let mensaje = `Error al enviar el registro (${response.status})`
+    try {
+      const parsed = JSON.parse(bodyText)
+      mensaje = parsed.error || parsed.message || mensaje
+    } catch {
+      if (bodyText) mensaje = bodyText
+    }
+    throw new Error(mensaje)
   }
-console.log('URL:', `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/universal-create`)
-console.log('Token:', session?.access_token ? 'tiene token' : 'sin token')
+
   return response.json()
 }
