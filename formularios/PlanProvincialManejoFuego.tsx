@@ -12,6 +12,7 @@ import {
   StatusBar,
   BackHandler,
 } from "react-native";
+import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
@@ -24,6 +25,8 @@ import { addToQueue } from "../lib/offlineQueue";
 import { createRecord } from "../lib/api";
 import AudioRecorder from "../components/AudioRecorder";
 import MapaUbicacion from "../components/MapaUbicacion";
+import SelectorFechaHora from "../components/SelectorFechaHora";
+import FondoDegradado from "../components/FondoDegradado";
 
 const TABLA = "plan_provincial_manejo_fuego";
 
@@ -55,7 +58,8 @@ const initialForm = (): FormState => ({
 type SheetType = "enviado" | "offline" | "error" | null;
 
 export default function PlanProvincialManejoFuego() {
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
+  const router = useRouter();
   const { colores: C } = useTheme();
   const { location, error: locationError, loading: locationLoading, retry } = useLocation();
   const { isConnected } = useNetwork();
@@ -255,19 +259,19 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
 
   if (locationLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor: C.fondo }]}>
-        <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+      <FondoDegradado style={styles.centered}>
+        <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
         <ActivityIndicator size="large" color={C.naranja} />
         <Text style={[styles.loadingText, { color: C.texto }]}>Obteniendo ubicación...</Text>
         <Text style={[styles.loadingSubtext, { color: C.textoSub }]}>La ubicación es obligatoria para continuar</Text>
-      </View>
+      </FondoDegradado>
     );
   }
 
   if (locationError) {
     return (
-      <View style={[styles.centered, { backgroundColor: C.fondo }]}>
-        <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+      <FondoDegradado style={styles.centered}>
+        <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
         <View style={[styles.errorIcon, { backgroundColor: C.fondoCard }]}>
           <Ionicons name="location-outline" size={48} color={C.naranja} />
         </View>
@@ -277,16 +281,16 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
           <Ionicons name="refresh" size={18} color={C.fondoCard} />
           <Text style={[styles.retryBtnText, { color: C.fondoCard }]}>Reintentar</Text>
         </TouchableOpacity>
-      </View>
+      </FondoDegradado>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.fondo }}>
-      <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+    <FondoDegradado>
+      <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
 
       <ScrollView
-        style={[styles.container, { backgroundColor: C.fondo }]}
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!mapaDragging}
       >
@@ -298,11 +302,9 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
             </Text>
             <Text style={[styles.headerSub, { color: C.textoSub }]}>Nuevo reporte de incendio</Text>
           </View>
-          {session && (
-            <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: C.fondoCard }]} onPress={signOut}>
-              <Ionicons name="log-out-outline" size={20} color={C.naranja} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: C.fondoCard }]} onPress={() => router.replace('/inicio')}>
+            <Ionicons name="arrow-back" size={20} color={C.naranja} />
+          </TouchableOpacity>
         </View>
 
         {/* Banner offline */}
@@ -354,25 +356,11 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
             <Text style={[styles.sectionTitle, { color: C.texto }]}>Fecha y hora</Text>
           </View>
           <View style={styles.row}>
-            <View style={[styles.inputWrapper, { flex: 1, marginRight: 8, backgroundColor: C.fondoCard, borderColor: C.borde }]}>
-              <Ionicons name="calendar-outline" size={16} color={C.verde} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: C.texto }]}
-                value={form.fecha_inicio}
-                onChangeText={(v) => updateField("fecha_inicio", v)}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={C.textoTenue}
-              />
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <SelectorFechaHora modo="date" valor={form.fecha_inicio} onChange={(v) => updateField("fecha_inicio", v)} />
             </View>
-            <View style={[styles.inputWrapper, { flex: 1, backgroundColor: C.fondoCard, borderColor: C.borde }]}>
-              <Ionicons name="time-outline" size={16} color={C.verde} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: C.texto }]}
-                value={form.hora_inicio}
-                onChangeText={(v) => updateField("hora_inicio", v)}
-                placeholder="HH:MM:SS"
-                placeholderTextColor={C.textoTenue}
-              />
+            <View style={{ flex: 1 }}>
+              <SelectorFechaHora modo="time" valor={form.hora_inicio} onChange={(v) => updateField("hora_inicio", v)} />
             </View>
           </View>
         </View>
@@ -532,7 +520,7 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
     {sheetType ? renderSheetContent() : <View />}
   </BottomSheetView>
 </BottomSheet>
-    </View>
+    </FondoDegradado>
   );
 }
 
@@ -542,12 +530,12 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 16, fontWeight: "600", marginTop: 16 },
   loadingSubtext: { fontSize: 13, marginTop: 8, textAlign: "center" },
   errorIcon: { width: 90, height: 90, borderRadius: 45, justifyContent: "center", alignItems: "center", marginBottom: 16 },
-  errorTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
+  errorTitle: { fontSize: 20, fontWeight: "normal", marginBottom: 8 },
   errorText: { fontSize: 14, textAlign: "center", marginBottom: 24 },
   retryBtn: { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 8 },
-  retryBtnText: { fontSize: 16, fontWeight: "700" },
+  retryBtnText: { fontSize: 16, fontWeight: "normal" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 56, paddingBottom: 20 },
-  headerGreeting: { fontSize: 20, fontWeight: "700" },
+  headerGreeting: { fontSize: 20, fontWeight: "normal" },
   headerSub: { fontSize: 13, marginTop: 2 },
   logoutBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   offlineBanner: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 20, borderRadius: 10, padding: 12, marginBottom: 8 },
@@ -575,11 +563,11 @@ const styles = StyleSheet.create({
   addBtnText: { fontSize: 15, fontWeight: "600" },
   submitBtn: { marginHorizontal: 20, borderRadius: 14, padding: 18, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 8 },
   submitBtnDisabled: { opacity: 0.5 },
-  submitBtnText: { fontSize: 17, fontWeight: "800" },
+  submitBtnText: { fontSize: 17, fontWeight: "normal" },
   sheetContent: { flex: 1, alignItems: "center", padding: 28, paddingTop: 16, paddingBottom: 32 },
   sheetIconCircle: { width: 80, height: 80, borderRadius: 40, justifyContent: "center", alignItems: "center", marginBottom: 16 },
-  sheetTitle: { fontSize: 22, fontWeight: "800", marginBottom: 8, textAlign: "center" },
+  sheetTitle: { fontSize: 22, fontWeight: "normal", marginBottom: 8, textAlign: "center" },
   sheetSubtitle: { fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 24 },
   sheetBtn: { borderRadius: 12, paddingHorizontal: 32, paddingVertical: 14 },
-  sheetBtnText: { fontSize: 16, fontWeight: "700" },
+  sheetBtnText: { fontSize: 16, fontWeight: "normal" },
 });

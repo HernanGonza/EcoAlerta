@@ -1,3 +1,4 @@
+import '../lib/fuentesGlobales'
 import { Stack, usePathname, useRouter } from 'expo-router'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -8,6 +9,7 @@ import { useNetwork } from '../hooks/useNetwork'
 import { useEffect } from 'react'
 import { Platform } from 'react-native'
 import * as SystemUI from 'expo-system-ui'
+import { useFonts } from 'expo-font'
 
 function SyncManager({ children }: { children: React.ReactNode }) {
   useSync()
@@ -33,11 +35,22 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'OakSans-Light': require('../assets/fonts/OakSans-Light.ttf'),
+    'OakSans-Regular': require('../assets/fonts/OakSans-Regular.ttf'),
+    'OakSans-Medium': require('../assets/fonts/OakSans-Medium.ttf'),
+    'OakSans-SemiBold': require('../assets/fonts/OakSans-SemiBold.ttf'),
+    'OakSans-Bold': require('../assets/fonts/OakSans-Bold.ttf'),
+    'OakSans-ExtraBold': require('../assets/fonts/OakSans-ExtraBold.ttf'),
+  })
+
   useEffect(() => {
     if (Platform.OS === 'android') {
-      SystemUI.setBackgroundColorAsync('#36382E')
+      SystemUI.setBackgroundColorAsync('#2C4A3A')
     }
   }, [])
+
+  if (!fontsLoaded) return null
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -46,7 +59,7 @@ export default function RootLayout() {
           <FormulariosProvider>
             <SyncManager>
               <SessionGuard>
-                <Stack screenOptions={{ headerShown: false }} />
+                <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
               </SessionGuard>
             </SyncManager>
           </FormulariosProvider>

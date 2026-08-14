@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   recordIconCircleActive: {
     backgroundColor: '#ff4444', borderColor: '#ff4444',
   },
-  recordBtnTitle: { fontSize: 16, fontWeight: '700' },
+  recordBtnTitle: { fontSize: 16, fontWeight: 'normal' },
   recordBtnSub: { fontSize: 12, marginTop: 2 },
   recordingDot: {
     width: 10, height: 10, borderRadius: 5,

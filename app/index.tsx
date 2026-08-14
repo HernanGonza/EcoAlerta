@@ -4,6 +4,8 @@ import { View, Image, StyleSheet, Animated } from 'react-native'
 import * as SplashScreen from 'expo-splash-screen'
 import { useAuth } from '../lib/authContext'
 import { useNetwork } from '../hooks/useNetwork'
+import { useTheme } from '../hooks/useTheme'
+import FondoDegradado from '../components/FondoDegradado'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -12,6 +14,7 @@ const DURACION = 4000
 export default function Index() {
   const { session, loading } = useAuth()
   const { isConnected } = useNetwork()
+  const { colores: C } = useTheme()
   const router = useRouter()
   const progreso = useRef(new Animated.Value(0)).current
 
@@ -45,43 +48,39 @@ export default function Index() {
   })
 
   return (
-    <View style={styles.container}>
+    <FondoDegradado style={styles.container}>
       <Image
-        source={require('../assets/images/splash.png')}
+        source={require('../assets/images/splash-ministerio.png')}
         style={styles.image}
         resizeMode="contain"
       />
 
       <View style={styles.barraContainer}>
-        <Animated.View style={[styles.barra, { width }]} />
+        <Animated.View style={[styles.barra, { width, backgroundColor: C.naranja }]} />
       </View>
-    </View>
+    </FondoDegradado>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#36382E',
     justifyContent: 'center',
     alignItems: 'center',
   },
   image: {
-    width: 300,
+    width: 280,
+    height: 118,
+    marginBottom: 28,
   },
   barraContainer: {
-    position: 'absolute',
-    bottom: 60,
-    left: 40,
-    right: 40,
+    width: 280,
     height: 3,
-    backgroundColor: '#4a4d40',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     borderRadius: 2,
     overflow: 'hidden',
   },
   barra: {
     height: '100%',
-    backgroundColor: '#FF751F',
     borderRadius: 2,
   },
 })

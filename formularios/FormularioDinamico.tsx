@@ -13,6 +13,7 @@ import {
   StatusBar,
   BackHandler,
 } from "react-native";
+import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../lib/authContext";
@@ -25,6 +26,8 @@ import { createRecord } from "../lib/api";
 import { guardarMetadataCache, leerMetadataCache, guardarOpcionesFKCache, leerOpcionesFKCache } from "../lib/formularioMetadataCache";
 import MapaUbicacion from "../components/MapaUbicacion";
 import AudioRecorder from "../components/AudioRecorder";
+import SelectorFechaHora from "../components/SelectorFechaHora";
+import FondoDegradado from "../components/FondoDegradado";
 
 const FOTOS_BUCKET = "fotos";
 const AUDIOS_BUCKET = "audios";
@@ -71,6 +74,7 @@ const CAMPOS_EXCLUIDOS = new Set([
   "longitud_gms",
   "fotos",
   "audios",
+  "ciudad_temp",
 ]);
 
 type TipoCampo = "foreign" | "boolean" | "time" | "date" | "number" | "text";
@@ -78,8 +82,8 @@ type TipoCampo = "foreign" | "boolean" | "time" | "date" | "number" | "text";
 function tipoDeCampo(f: CampoMeta): TipoCampo {
   if (f.foreign_table) return "foreign";
   if (f.tipo === "boolean") return "boolean";
-  if (f.tipo.includes("time") && !f.tipo.includes("timestamp")) return "time";
-  if (f.tipo === "date" || f.tipo.includes("timestamp")) return "date";
+  if (f.tipo?.includes("time") && !f.tipo.includes("timestamp")) return "time";
+  if (f.tipo === "date" || f.tipo?.includes("timestamp")) return "date";
   if (["integer", "numeric", "double precision", "bigint", "smallint", "real"].includes(f.tipo)) return "number";
   return "text";
 }
@@ -87,7 +91,8 @@ function tipoDeCampo(f: CampoMeta): TipoCampo {
 type SheetType = "enviado" | "offline" | "error" | null;
 
 export default function FormularioDinamico({ slug }: { slug: string }) {
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
+  const router = useRouter();
   const { colores: C } = useTheme();
   const { location, error: locationError, loading: locationLoading, retry } = useLocation();
   const { isConnected } = useNetwork();
@@ -174,16 +179,18 @@ export default function FormularioDinamico({ slug }: { slug: string }) {
 
         const camposFK: CampoMeta[] = (json.fields ?? []).filter((f: CampoMeta) => f.foreign_table);
         const datosFK: Record<string, OpcionFK[]> = {};
-        for (const f of camposFK) {
-          const selectQuery = f.foreign_table === "municipios" ? "id, nombre, departamento_id" : "id, nombre";
-          const { data } = await supabase
-            .from(f.foreign_table!)
-            .select(selectQuery)
-            .order("nombre", { ascending: true });
-          const opciones = (data as any) ?? [];
-          datosFK[f.campo] = opciones;
-          guardarOpcionesFKCache(f.foreign_table!, opciones);
-        }
+        await Promise.all(
+          camposFK.map(async (f) => {
+            const selectQuery = f.foreign_table === "municipios" ? "id, nombre, departamento_id" : "id, nombre";
+            const { data } = await supabase
+              .from(f.foreign_table!)
+              .select(selectQuery)
+              .order("nombre", { ascending: true });
+            const opciones = (data as any) ?? [];
+            datosFK[f.campo] = opciones;
+            guardarOpcionesFKCache(f.foreign_table!, opciones);
+          })
+        );
         if (!cancelado) setOpcionesFK(datosFK);
       } catch (e: any) {
         // Se reportó conexión pero la petición falló igual (red inestable): probamos con lo último guardado.
@@ -274,10 +281,17 @@ export default function FormularioDinamico({ slug }: { slug: string }) {
 
     setSubmitting(true);
     try {
-      const camposValidos = new Set(campos.map((f) => f.campo));
       const datosLimpios: Record<string, any> = {};
-      for (const [key, val] of Object.entries(valores)) {
-        if (camposValidos.has(key)) datosLimpios[key] = val;
+      for (const f of campos) {
+        const val = valores[f.campo];
+        if (val === undefined || val === null || val === "") {
+          datosLimpios[f.campo] = null;
+        } else if (tipoDeCampo(f) === "number") {
+          const num = Number(val);
+          datosLimpios[f.campo] = Number.isNaN(num) ? null : num;
+        } else {
+          datosLimpios[f.campo] = val;
+        }
       }
 
       const lat = coordsOverride?.lat ?? location.latitud_decimal;
@@ -387,29 +401,23 @@ export default function FormularioDinamico({ slug }: { slug: string }) {
 
     if (tipo === "date") {
       return (
-        <View key={f.campo} style={[styles.inputWrapper, { backgroundColor: C.fondoCard, borderColor: C.borde }]}>
-          <TextInput
-            style={[styles.input, { paddingLeft: 14, color: C.texto }]}
-            value={valor ?? ""}
-            onChangeText={(v) => actualizarCampo(f.campo, v)}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={C.textoTenue}
-          />
-        </View>
+        <SelectorFechaHora
+          key={f.campo}
+          modo="date"
+          valor={valor}
+          onChange={(v) => actualizarCampo(f.campo, v)}
+        />
       );
     }
 
     if (tipo === "time") {
       return (
-        <View key={f.campo} style={[styles.inputWrapper, { backgroundColor: C.fondoCard, borderColor: C.borde }]}>
-          <TextInput
-            style={[styles.input, { paddingLeft: 14, color: C.texto }]}
-            value={valor ?? ""}
-            onChangeText={(v) => actualizarCampo(f.campo, v)}
-            placeholder="HH:MM:SS"
-            placeholderTextColor={C.textoTenue}
-          />
-        </View>
+        <SelectorFechaHora
+          key={f.campo}
+          modo="time"
+          valor={valor}
+          onChange={(v) => actualizarCampo(f.campo, v)}
+        />
       );
     }
 
@@ -443,54 +451,54 @@ export default function FormularioDinamico({ slug }: { slug: string }) {
 
   if (cargando) {
     return (
-      <View style={[styles.centered, { backgroundColor: C.fondo }]}>
-        <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+      <FondoDegradado style={styles.centered}>
+        <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
         <ActivityIndicator size="large" color={C.naranja} />
         <Text style={[styles.loadingText, { color: C.texto }]}>Cargando formulario...</Text>
-      </View>
+      </FondoDegradado>
     );
   }
 
   if (errorCarga) {
     return (
-      <View style={[styles.centered, { backgroundColor: C.fondo }]}>
-        <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+      <FondoDegradado style={styles.centered}>
+        <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
         <Ionicons name="alert-circle-outline" size={48} color={C.naranja} />
         <Text style={[styles.loadingText, { color: C.texto }]}>{errorCarga}</Text>
-      </View>
+      </FondoDegradado>
     );
   }
 
   if (locationLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor: C.fondo }]}>
-        <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+      <FondoDegradado style={styles.centered}>
+        <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
         <ActivityIndicator size="large" color={C.naranja} />
         <Text style={[styles.loadingText, { color: C.texto }]}>Obteniendo ubicación...</Text>
-      </View>
+      </FondoDegradado>
     );
   }
 
   if (locationError) {
     return (
-      <View style={[styles.centered, { backgroundColor: C.fondo }]}>
-        <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+      <FondoDegradado style={styles.centered}>
+        <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
         <Ionicons name="location-outline" size={48} color={C.naranja} />
         <Text style={[styles.loadingText, { color: C.texto }]}>{locationError}</Text>
         <TouchableOpacity style={[styles.retryBtn, { backgroundColor: C.naranja }]} onPress={retry}>
           <Ionicons name="refresh" size={18} color={C.fondoCard} />
           <Text style={[styles.retryBtnText, { color: C.fondoCard }]}>Reintentar</Text>
         </TouchableOpacity>
-      </View>
+      </FondoDegradado>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.fondo }}>
-      <StatusBar barStyle={C.statusBar} backgroundColor={C.fondo} />
+    <FondoDegradado>
+      <StatusBar barStyle={C.statusBar} backgroundColor="transparent" translucent />
 
       <ScrollView
-        style={[styles.container, { backgroundColor: C.fondo }]}
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!mapaDragging}
       >
@@ -499,8 +507,8 @@ export default function FormularioDinamico({ slug }: { slug: string }) {
             <Text style={[styles.headerGreeting, { color: C.texto }]}>{meta?.formulario.nombre}</Text>
             <Text style={[styles.headerSub, { color: C.textoSub }]}>Nuevo reporte</Text>
           </View>
-          <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: C.fondoCard }]} onPress={signOut}>
-            <Ionicons name="log-out-outline" size={20} color={C.naranja} />
+          <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: C.fondoCard }]} onPress={() => router.replace('/inicio')}>
+            <Ionicons name="arrow-back" size={20} color={C.naranja} />
           </TouchableOpacity>
         </View>
 
@@ -699,7 +707,7 @@ export default function FormularioDinamico({ slug }: { slug: string }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </FondoDegradado>
   );
 }
 
@@ -708,9 +716,9 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
   loadingText: { fontSize: 15, fontWeight: "600", marginTop: 16, textAlign: "center" },
   retryBtn: { borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 20 },
-  retryBtnText: { fontSize: 16, fontWeight: "700" },
+  retryBtnText: { fontSize: 16, fontWeight: "normal" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 56, paddingBottom: 20 },
-  headerGreeting: { fontSize: 20, fontWeight: "700" },
+  headerGreeting: { fontSize: 20, fontWeight: "normal" },
   headerSub: { fontSize: 13, marginTop: 2 },
   logoutBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   offlineBanner: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 20, borderRadius: 10, padding: 12, marginBottom: 8 },
@@ -733,16 +741,16 @@ const styles = StyleSheet.create({
   addBtnText: { fontSize: 15, fontWeight: "600" },
   submitBtn: { marginHorizontal: 20, borderRadius: 14, padding: 18, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 8 },
   submitBtnDisabled: { opacity: 0.5 },
-  submitBtnText: { fontSize: 17, fontWeight: "800" },
+  submitBtnText: { fontSize: 17, fontWeight: "normal" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalCard: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: "75%", paddingBottom: 24, paddingTop: 16 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, marginBottom: 12 },
-  modalTitle: { fontSize: 18, fontWeight: "700" },
+  modalTitle: { fontSize: 18, fontWeight: "normal" },
   opcionItem: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
   opcionText: { fontSize: 15 },
   sheetCard: { borderTopLeftRadius: 24, borderTopRightRadius: 24, alignItems: "center", padding: 28, paddingBottom: 40 },
-  sheetTitle: { fontSize: 22, fontWeight: "800", marginTop: 12, marginBottom: 8, textAlign: "center" },
+  sheetTitle: { fontSize: 22, fontWeight: "normal", marginTop: 12, marginBottom: 8, textAlign: "center" },
   sheetSubtitle: { fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 24 },
   sheetBtn: { borderRadius: 12, paddingHorizontal: 32, paddingVertical: 14 },
-  sheetBtnText: { fontSize: 16, fontWeight: "700" },
+  sheetBtnText: { fontSize: 16, fontWeight: "normal" },
 });

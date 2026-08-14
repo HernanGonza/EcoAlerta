@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "EcoAlerta",
+    "name": "EcoDatos",
     "slug": "ecoalerta",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/ECOALERTA - ISO.png",
+    "icon": "./assets/images/ECODATOS-icono.png",
     "scheme": "ecoalerta",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,10 +15,9 @@
     "android": {
       "package": "ar.gob.misiones.ecologia.ecoalerta",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/ECOALERTA - ISO.png",
-        "backgroundImage": "./assets/images/ECOALERTA - ISO.png",
-        "monochromeImage": "./assets/images/ECOALERTA - ISO.png"
+        "backgroundColor": "#2C4A3A",
+        "foregroundImage": "./assets/images/ECODATOS-icono.png",
+        "monochromeImage": "./assets/images/ECODATOS-icono.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -28,7 +27,7 @@
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/images/ECOALERTA - ISO.png"
+      "favicon": "./assets/images/ECODATOS-icono.png"
     },
     "plugins": [
       "expo-router",
@@ -38,12 +37,12 @@
           "image": "./assets/images/solido.png",
           "imageWidth": 300,
           "resizeMode": "contain",
-          "backgroundColor": "#36382E",
+          "backgroundColor": "#3E6C51",
           "android": {
       "image": "./assets/images/solido.png",
       "imageWidth": 300,
       "resizeMode": "contain",
-      "backgroundColor": "#36382E"
+      "backgroundColor": "#3E6C51"
     }
         }
       ],
