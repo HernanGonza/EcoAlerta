@@ -10,7 +10,6 @@ import {
   Image,
   FlatList,
   StatusBar,
-  BackHandler,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -217,13 +216,13 @@ longitud_dms: coordsOverride ? `${coordsOverride.lng.toFixed(6)}` : location.lon
         <View style={[styles.sheetIconCircle, { backgroundColor: "#1a3a1a" }]}>
           <Ionicons name="checkmark-circle" size={48} color={C.verde} />
         </View>
-        <Text style={[styles.sheetTitle, { color: C.texto }]}>¡Reporte enviado!</Text>
+        <Text style={[styles.sheetTitle, { color: C.texto }]}>Registro guardado</Text>
         <Text style={[styles.sheetSubtitle, { color: C.textoSub }]}>El reporte fue registrado correctamente en el sistema.</Text>
         <TouchableOpacity
           style={[styles.sheetBtn, { backgroundColor: C.fondoInput, borderWidth: 1, borderColor: C.oliva, justifyContent: "center", alignItems: "center", paddingHorizontal: 48 }]}
-          onPress={() => BackHandler.exitApp()}
+          onPress={() => router.replace('/inicio')}
         >
-          <Text style={[styles.sheetBtnText, { color: C.oliva }]}>Cerrar app</Text>
+          <Text style={[styles.sheetBtnText, { color: C.oliva }]}>Volver a formularios</Text>
         </TouchableOpacity>
       </View>
     );

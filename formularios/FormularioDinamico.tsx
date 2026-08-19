@@ -11,7 +11,6 @@ import {
   FlatList,
   Image,
   StatusBar,
-  BackHandler,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -677,10 +676,10 @@ export default function FormularioDinamico({ slug }: { slug: string }) {
             {sheetType === "enviado" && (
               <>
                 <Ionicons name="checkmark-circle" size={48} color={C.verde} />
-                <Text style={[styles.sheetTitle, { color: C.texto }]}>¡Reporte enviado!</Text>
+                <Text style={[styles.sheetTitle, { color: C.texto }]}>Registro guardado</Text>
                 <Text style={[styles.sheetSubtitle, { color: C.textoSub }]}>El reporte fue registrado correctamente.</Text>
-                <TouchableOpacity style={[styles.sheetBtn, { backgroundColor: C.naranja }]} onPress={() => BackHandler.exitApp()}>
-                  <Text style={[styles.sheetBtnText, { color: C.fondoCard }]}>Cerrar app</Text>
+                <TouchableOpacity style={[styles.sheetBtn, { backgroundColor: C.naranja }]} onPress={() => router.replace('/inicio')}>
+                  <Text style={[styles.sheetBtnText, { color: C.fondoCard }]}>Volver a formularios</Text>
                 </TouchableOpacity>
               </>
             )}

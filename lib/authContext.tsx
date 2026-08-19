@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // en limpio en /login, en vez de repetir el error para siempre.
         if (e?.message?.includes('Refresh Token')) {
           console.warn('[auth] refresh token inválido, limpiando sesión guardada:', e.message)
-          supabase.auth.signOut().catch(() => {})
+          supabase.auth.signOut({ scope: 'local' }).catch(() => {})
         } else {
           // Sin red y con un token que necesitaba refrescarse: seguimos con lo que
           // haya persistido en el dispositivo en vez de romper el arranque de la app.
